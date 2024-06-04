@@ -5,6 +5,9 @@ import Debug from './debug';
 
 export interface PanoViewerOptions {
     debugMode?: boolean;
+    rotationX: number,
+    rotationY: number,
+    rotationZ: number,
 }
 
 
@@ -18,7 +21,15 @@ export class PanoViewerBasic {
     private clock: THREE.Clock = new THREE.Clock()
 
     private animReqId: number = -1
+
     debug: Debug
+
+    //this can be read in with metadata after manual horizon connection
+    options = {
+        rotationX: -0.065,
+        rotationY: 0.1,
+        rotationZ: -0.005,
+    }
 
     constructor(parentNode: HTMLElement, options?: PanoViewerOptions) {
         this.canvas = parentNode
@@ -30,20 +41,51 @@ export class PanoViewerBasic {
 
         //------------------
         //Naive panorama render (no zoom, no nav yet)
-
-        var geometry = new THREE.SphereGeometry(500, 60, 40);
-        geometry.scale(- 1, 1, 1);
-
-        var material = new THREE.MeshBasicMaterial({
-            map: new THREE.TextureLoader().load('/R0010121.JPG.jpg')
-        });
-
-        const mesh = new THREE.Mesh(geometry, material);
-
-        this.scene.add(mesh);
+        this.setupPanorama(this.scene, this.debug, this.options)
         this.tick()
     }
 
+
+    setupPanorama = (scene: THREE.Scene, debug: Debug, options: any) => {
+
+        //panorama
+        var geometry = new THREE.SphereGeometry(500, 60, 40);
+        geometry.scale(- 1, 1, 1);
+
+        const texture = new THREE.TextureLoader().load('/R0010121.JPG.jpg')
+        texture.colorSpace = THREE.SRGBColorSpace
+        var material = new THREE.MeshBasicMaterial({
+            map: texture
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.setRotationFromEuler(new THREE.Euler(options.rotationX, options.rotationY, options.rotationZ))
+
+        scene.add(mesh);
+
+
+        //bottom primitive
+        var plane_geometry = new THREE.CircleGeometry(50, 64);
+        var plane_material = new THREE.MeshBasicMaterial();
+        plane_material.opacity = .5
+        plane_material.transparent = true
+        var plane = new THREE.Mesh(plane_geometry, plane_material);
+        plane.position.set(0, -75, 0)
+        plane.rotateX(-Math.PI / 2)
+        scene.add(plane);
+
+
+        //DEBUG 
+        const debugFolder = debug.ui?.addFolder('Panorama correction');
+        debugFolder?.add(options, 'rotationX').min(-0.3).max(0.3).onChange((value: number) => {
+            mesh.setRotationFromEuler(new THREE.Euler(value, mesh.rotation.y, mesh.rotation.z))
+        })
+        debugFolder?.add(options, 'rotationY').min(-0.3).max(0.3).step(0.01).onChange((value: number) => {
+            mesh.setRotationFromEuler(new THREE.Euler(mesh.rotation.x, value, mesh.rotation.z))
+        })
+        debugFolder?.add(options, 'rotationZ').min(-0.3).max(0.3).onChange((value: number) => {
+            mesh.setRotationFromEuler(new THREE.Euler(mesh.rotation.x, mesh.rotation.y, value))
+        })
+    }
     update = () => {
         //update renderer
         this.renderer.update()

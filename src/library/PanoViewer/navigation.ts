@@ -19,7 +19,6 @@ export default class Navigation {
         this.debug = debug
 
         this.navcam = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
-        console.log(this.navcam)
 
         this.init()
     }
@@ -31,6 +30,9 @@ export default class Navigation {
         this.controls = new OrbitControls(this.navcam, this.canvas)
         this.controls.enableDamping = true
         this.controls.enableZoom = false
+        this.controls.enablePan = false
+        this.controls.rotateSpeed = -0.4
+        this.controls.dampingFactor = 0.05
 
         window.addEventListener('wheel', this.zoom)
 
@@ -53,7 +55,7 @@ export default class Navigation {
         this.controls?.update()
     }
 
-    dispose() {
+    dispose = () => {
         this.controls?.dispose()
         window.removeEventListener('wheel', this.zoom);
 

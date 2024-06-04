@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import Navigation from './navigation';
 import Debug from './debug';
+import { toneMapping } from 'three/examples/jsm/nodes/Nodes.js';
 
 
 
@@ -16,7 +17,11 @@ export default class Renderer {
 
     private width: number
     private height: number
+    options = {
+        exposure: 1.0,
+        toneMapping: THREE.NeutralToneMapping
 
+    }
 
     constructor(canvas: HTMLElement, scene: THREE.Scene, navigation: Navigation, debug?: Debug) {
         this.canvas = canvas
@@ -24,10 +29,13 @@ export default class Renderer {
         this.navigation = navigation
         this.debug = debug
 
+        // This could be done in separate viewport manager class, but here we don' have any complex framing 
+        // of the canvas - only regular fullscreen implementation
         this.pixelRatio = Math.min(Math.max(window.devicePixelRatio, 1), 2);
         this.width = window.innerWidth
         this.height = window.innerHeight
-        // Rendere initialization
+
+        // Renderer initialization
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
             alpha: true,
@@ -38,14 +46,32 @@ export default class Renderer {
         window.addEventListener('resize', this.resize)
         this.resize()
         this.init()
+        this.initDebug()
     }
 
     init = () => {
-        this.renderer.toneMapping = THREE.NeutralToneMapping
-        this.renderer.toneMappingExposure = 1.0
+        this.renderer.toneMapping = this.options.toneMapping
+        this.renderer.toneMappingExposure = this.options.exposure
         this.renderer.shadowMap.enabled = false
         this.renderer.setClearColor("#fff", 1); // transparent
-        this.renderer.setPixelRatio(this.pixelRatio);
+    }
+
+    initDebug = () => {
+
+        const debugFolder = this.debug?.ui?.addFolder('Image correction');
+        debugFolder?.add(this.options, 'exposure').min(0.2).max(3.0).step(0.05).onChange((value: number) => {
+            this.renderer.toneMappingExposure = value
+        })
+        debugFolder?.add(this.options, 'toneMapping',
+            {
+                "Neutral": THREE.NeutralToneMapping,
+                "Reinhard": THREE.ReinhardToneMapping,
+                "Cineon": THREE.CineonToneMapping,
+                "AgX": THREE.AgXToneMapping,
+                "ACES Filmic": THREE.ACESFilmicToneMapping
+            }).onChange((value: THREE.ToneMapping) => {
+                this.renderer.toneMapping = value
+            })
     }
 
     resize = () => {

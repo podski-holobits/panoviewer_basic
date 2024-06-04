@@ -13,10 +13,9 @@ const PanoViewer = ({ children }: Props) => {
 
     useEffect(() => {
 
+        //TODO need to refactor that
         if (containerRef.current) {
-            console.log(containerRef.current)
             const threeInstance = new PanoViewerBasic(containerRef.current);
-            console.log(threeInstance.scene)
             threeRef.current = threeInstance;
             return () => threeInstance.dispose();
         }
