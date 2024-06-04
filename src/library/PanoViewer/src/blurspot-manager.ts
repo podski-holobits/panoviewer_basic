@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import Navigation from './navigation';
 import Debug from './debug';
 
+//TODO clear blurspots
+//TODO dispose of existing blurspots
 
 export class BlurspotManager {
 
@@ -72,11 +74,13 @@ export class BlurspotManager {
                 const intersects = raycaster.intersectObject(this.collider_sphere, false)
                 if (intersects.length > 0) {
                     this.blurspot_position = intersects[0].point
-                    this.blurspot_position.multiplyScalar(0.5)
+                    this.blurspot_position.multiplyScalar(0.8)
 
                     this.current_blurspot = new THREE.Mesh(this.blurspot_geometry, this.blurspot_material);
-                    this.current_blurspot.lookAt(this.navigation.navcam.position)
+
                     this.current_blurspot.position.set(this.blurspot_position.x, this.blurspot_position.y, this.blurspot_position.z)
+                    this.current_blurspot.lookAt(new THREE.Vector3(0.0, 0.0, 0.0))
+                    this.current_blurspot.scale.set(0.1, 0.1, 0.1)
                     this.scene.add(this.current_blurspot)
                 }
             }
@@ -106,7 +110,7 @@ export class BlurspotManager {
                 if (this.collider_sphere) {
                     const intersects = raycaster.intersectObject(this.collider_sphere, false)
                     if (intersects.length > 0) {
-                        const distance = this.options.drawSpeed * this.blurspot_position.distanceTo(intersects[0].point.multiplyScalar(0.5))
+                        const distance = this.options.drawSpeed * Math.max(0.1, this.blurspot_position.distanceTo(intersects[0].point.multiplyScalar(0.8)))
                         this.current_blurspot.scale.set(distance, distance, distance)
                     }
                 }

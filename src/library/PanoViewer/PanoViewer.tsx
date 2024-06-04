@@ -1,6 +1,6 @@
 
 import { useEffect, useRef, ReactNode } from "react";
-import { PanoViewerBasic } from "./pano-viewer-basic";
+import { PanoViewerBasic } from "./src/pano-viewer-basic";
 
 interface Props {
     children?: ReactNode

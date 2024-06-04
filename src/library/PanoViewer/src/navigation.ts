@@ -7,7 +7,7 @@ import Debug from './debug';
 //TODO orbit controls need to be redefined for better zoom - very naive implementation now
 export default class Navigation {
     controls: OrbitControls | undefined
-    private scene: THREE.Scene
+    private readonly scene: THREE.Scene;
     private canvas: HTMLElement
     private debug: Debug | undefined
 
@@ -24,7 +24,7 @@ export default class Navigation {
     }
 
     init = () => {
-        this.navcam.position.set(0, 0, 0.1)
+        this.navcam.position.set(0, 0, 0.01)
         this.scene.add(this.navcam)
 
         this.controls = new OrbitControls(this.navcam, this.canvas)
