@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import Renderer from './renderer';
 import Navigation from './navigation';
 import Debug from './debug';
+import { BlurspotManager } from './blurspot-manager';
 
 export interface PanoViewerOptions {
     debugMode?: boolean;
@@ -20,8 +21,11 @@ export class PanoViewerBasic {
     private navigation: Navigation
     private clock: THREE.Clock = new THREE.Clock()
 
+    private blurspots: BlurspotManager | undefined
     private animReqId: number = -1
 
+
+    private mesh: THREE.Mesh | undefined
     debug: Debug
 
     //this can be read in with metadata after manual horizon connection
@@ -57,10 +61,10 @@ export class PanoViewerBasic {
         var material = new THREE.MeshBasicMaterial({
             map: texture
         });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.setRotationFromEuler(new THREE.Euler(options.rotationX, options.rotationY, options.rotationZ))
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.setRotationFromEuler(new THREE.Euler(options.rotationX, options.rotationY, options.rotationZ))
 
-        scene.add(mesh);
+        scene.add(this.mesh);
 
 
         //bottom primitive
@@ -73,18 +77,21 @@ export class PanoViewerBasic {
         plane.rotateX(-Math.PI / 2)
         scene.add(plane);
 
-
         //DEBUG 
         const debugFolder = debug.ui?.addFolder('Panorama correction');
         debugFolder?.add(options, 'rotationX').min(-0.3).max(0.3).onChange((value: number) => {
-            mesh.setRotationFromEuler(new THREE.Euler(value, mesh.rotation.y, mesh.rotation.z))
+            this.mesh?.setRotationFromEuler(new THREE.Euler(value, this.mesh.rotation.y, this.mesh.rotation.z))
         })
         debugFolder?.add(options, 'rotationY').min(-0.3).max(0.3).step(0.01).onChange((value: number) => {
-            mesh.setRotationFromEuler(new THREE.Euler(mesh.rotation.x, value, mesh.rotation.z))
+            this.mesh?.setRotationFromEuler(new THREE.Euler(this.mesh.rotation.x, value, this.mesh.rotation.z))
         })
         debugFolder?.add(options, 'rotationZ').min(-0.3).max(0.3).onChange((value: number) => {
-            mesh.setRotationFromEuler(new THREE.Euler(mesh.rotation.x, mesh.rotation.y, value))
+            this.mesh?.setRotationFromEuler(new THREE.Euler(this.mesh.rotation.x, this.mesh.rotation.y, value))
         })
+
+        //Add blurspot manager
+        this.blurspots = new BlurspotManager(this.scene, this.navigation, this.mesh, this.debug)
+
     }
     update = () => {
         //update renderer
@@ -92,6 +99,7 @@ export class PanoViewerBasic {
 
         //update navigation and camera
         this.navigation.update()
+
     }
 
     tick = () => {
@@ -134,6 +142,7 @@ export class PanoViewerBasic {
         this.renderer.dispose()
         this.debug.dispose()
 
+        this.blurspots?.dispose()
         //Dispose of animation frame (no react vite reloading issues)
         window.cancelAnimationFrame(this.animReqId)
 
