@@ -93,6 +93,11 @@ export class PanoViewerBasic {
         this.blurspots = new BlurspotManager(this.scene, this.navigation, this.mesh, this.debug)
 
     }
+
+    bake = () => {
+
+        console.log("bake")
+    }
     update = () => {
         //update renderer
         this.renderer.update()

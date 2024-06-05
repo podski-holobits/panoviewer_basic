@@ -1,15 +1,37 @@
 
-import { useEffect, useRef, ReactNode } from "react";
+import { useEffect, useRef, forwardRef, useImperativeHandle, ReactNode, ForwardedRef } from "react";
 import { PanoViewerBasic } from "./src/pano-viewer-basic";
 
 interface Props {
     children?: ReactNode
 }
-const PanoViewer = ({ children }: Props) => {
+
+// Define the ref type
+export type PanoViewerRef = {
+    handleBake: () => void;
+};
+
+const PanoViewer = forwardRef<PanoViewerRef, Props>((props: Props, ref: ForwardedRef<PanoViewerRef>) => {
 
     const containerRef = useRef<HTMLCanvasElement>(null);
     const threeRef = useRef<PanoViewerBasic | null>(null);
 
+    const bake = () => {
+        if (threeRef.current) {
+            threeRef.current.bake()
+        }
+        else {
+            console.warn("Error: No viewer referenced to run bake function")
+        }
+    }
+
+
+    // Pass the ref to the useImperativeHandle hook
+    useImperativeHandle(ref, () => ({
+        handleBake: () => {
+            bake();
+        }
+    }));
 
     useEffect(() => {
 
@@ -25,11 +47,11 @@ const PanoViewer = ({ children }: Props) => {
         <canvas
             ref={containerRef}
             onContextMenu={(event) => event.preventDefault()}
-            style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden" }}
+            className="w-full h-full relative overflow-hidden cursor-grab"
         >
-            {children}
+            {props.children}
         </canvas>
     )
-}
+})
 
 export default PanoViewer
