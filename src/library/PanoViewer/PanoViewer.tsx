@@ -5,12 +5,14 @@ import { PanoViewerBasic } from "./src/pano-viewer-basic";
 // props type definition
 interface Props {
     children?: ReactNode
-
+    equimapUrl: string
+    equimapLowResUrl?: string
 }
 
 // ref type definition
 export type PanoViewerRef = {
     handleBake: () => void;
+    handleClear: () => void;
     handleBlurType: (type: string) => void;
     handleBlurShape: (shape: string) => void;
 };
@@ -56,6 +58,16 @@ const PanoViewer = forwardRef<PanoViewerRef, Props>((props: Props, ref: Forwarde
             console.warn("Error: No viewer referenced to run bake function")
         }
     }
+    const clear = () => {
+        if (threeRef.current) {
+            threeRef.current.clear()
+        }
+        else {
+            console.warn("Error: No viewer referenced to run bake function")
+        }
+    }
+
+
 
 
     // Pass the ref to the useImperativeHandle hook
@@ -69,13 +81,21 @@ const PanoViewer = forwardRef<PanoViewerRef, Props>((props: Props, ref: Forwarde
         handleBlurShape: (shape: string) => {
             setBlurShape(shape);
         },
+        handleClear: () => {
+            clear();
+        },
     }));
 
     //INITIALIZE THREE.JS CLASS
     useEffect(() => {
 
         if (containerRef.current) {
-            const threeInstance = new PanoViewerBasic(containerRef.current);
+            const threeInstance = new PanoViewerBasic(
+                containerRef.current,
+                {
+                    equimapUrl: props.equimapUrl,
+                    equimapLowResUrl: props.equimapLowResUrl
+                });
             threeRef.current = threeInstance;
             return () => threeInstance.dispose();
         }

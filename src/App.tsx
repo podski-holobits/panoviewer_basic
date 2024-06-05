@@ -6,6 +6,7 @@ import { AiOutlineInfo } from "react-icons/ai";
 import { MdOutlineBakeryDining } from "react-icons/md";
 import { FaRegCircle } from "react-icons/fa";
 import { FaRegSquare } from "react-icons/fa";
+import { MdCleaningServices } from "react-icons/md";
 
 import InfoDialog from "./library/InfoDialog";
 
@@ -37,6 +38,10 @@ function App() {
   //handle bake 
   const handleBakeClick = () => {
     viewerRef.current ? viewerRef.current.handleBake() : console.warn("no viewer available")
+  }
+
+  const handleClearClick = () => {
+    viewerRef.current ? viewerRef.current.handleClear() : console.warn("no viewer available")
   }
 
   return (
@@ -75,6 +80,12 @@ function App() {
               <MdOutlineBakeryDining />BAKE MAP
             </button>
 
+
+            {/* CLEAR BUTTON*/}
+            <button className="btn  text-xl mx-5" onClick={handleClearClick} >
+              <MdCleaningServices />
+            </button>
+
           </div>
 
           <div className="navbar-end">
@@ -88,7 +99,9 @@ function App() {
         </div>
       </header >
 
-      <PanoViewer ref={viewerRef} />
+      <PanoViewer ref={viewerRef}
+        equimapUrl="/R0010121.JPG.jpg"
+        equimapLowResUrl='/R0010121_LOW.JPG' />
 
       {/* INFO PANEL FOR MANUAL AND INFORMATION */}
       <InfoDialog id="info" />

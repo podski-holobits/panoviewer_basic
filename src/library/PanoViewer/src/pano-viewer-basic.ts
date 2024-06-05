@@ -7,9 +7,12 @@ import EquirectangularBaker from './equirectangular-baker';
 import MapManager from './map-manager';
 
 export interface PanoViewerOptions {
-    rotationX: number,
-    rotationY: number,
-    rotationZ: number,
+    equimapUrl: string
+    equimapLowResUrl?: string
+
+    rotationX?: number,
+    rotationY?: number,
+    rotationZ?: number,
 }
 
 /**
@@ -42,7 +45,7 @@ export class PanoViewerBasic {
         rotationZ: -0.005,
     }
 
-    constructor(parentNode: HTMLElement, options?: PanoViewerOptions) {
+    constructor(parentNode: HTMLElement, options: PanoViewerOptions) {
         this.canvas = parentNode
         this.scene = new THREE.Scene()
         this.debug = new Debug()
@@ -51,7 +54,7 @@ export class PanoViewerBasic {
         this.renderer = new Renderer(this.canvas, this.scene, this.navigation, this.debug)
 
         this.mapMaterial = new THREE.MeshBasicMaterial();
-        this.mapLoader = new MapManager(this.renderer.instance, this.mapMaterial, '/R0010121.JPG.jpg', '/R0010121_LOW.JPG')
+        this.mapLoader = new MapManager(this.renderer.instance, this.mapMaterial, options.equimapUrl, options.equimapLowResUrl)
 
         //------------------
         //Naive panorama render (no zoom, no nav yet)
@@ -61,6 +64,7 @@ export class PanoViewerBasic {
 
 
 
+    //INITIALIZATION
     setupPanorama = (scene: THREE.Scene, debug: Debug, options: any) => {
 
         //panorama
@@ -108,20 +112,23 @@ export class PanoViewerBasic {
 
     }
 
-    setBlurType = (type: string) => {
 
+    //METHODS exposed outside
+    setBlurType = (type: string) => {
         this.blurspots?.setBlurType(type)
     }
 
     setBlurShape = (shape: string) => {
-
         this.blurspots?.setBlurShape(shape)
     }
     bake = () => {
-
-        console.log("bake")
         this.baker?.bake()
     }
+    clear = () => {
+
+        this.blurspots?.clear()
+    }
+
 
 
     update = () => {
