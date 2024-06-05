@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 
+/*Cursor pointer management*/
 .grabbed {
   cursor: grabbing;
   cursor: -moz-grabbing;
   cursor: -webkit-grabbing;
 }
-
 
 .painting {
   cursor: crosshair !important;

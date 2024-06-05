@@ -3,33 +3,40 @@ import Renderer from './renderer';
 import Navigation from './navigation';
 import Debug from './debug';
 import { BlurspotManager } from './blurspot-manager';
+import EquirectangularBaker from './equirectangular-baker';
+import MapManager from './map-manager';
 
 export interface PanoViewerOptions {
-    debugMode?: boolean;
     rotationX: number,
     rotationY: number,
     rotationZ: number,
 }
 
-
+/**
+ *  Main class holding three.js experience
+ */
 export class PanoViewerBasic {
+
+    public debug: Debug
 
     readonly scene: THREE.Scene;
     readonly canvas: HTMLElement;
 
     private renderer: Renderer
     private navigation: Navigation
-    private clock: THREE.Clock = new THREE.Clock()
+    private mapLoader: MapManager
 
+    private mapMaterial: THREE.MeshBasicMaterial
     private blurspots: BlurspotManager | undefined
+    private baker: EquirectangularBaker | undefined
     private animReqId: number = -1
 
 
     private mesh: THREE.Mesh | undefined
-    debug: Debug
 
-    //this can be read in with metadata after manual horizon connection
-    options = {
+    //this can come from props in future
+    private options = {
+        //manual map orientation correction params- this could be read in with metadata after manual horizon connection or any automatic adjustment step
         rotationX: -0.065,
         rotationY: 0.1,
         rotationZ: -0.005,
@@ -43,11 +50,15 @@ export class PanoViewerBasic {
         this.navigation = new Navigation(this.canvas, this.scene, this.debug)
         this.renderer = new Renderer(this.canvas, this.scene, this.navigation, this.debug)
 
+        this.mapMaterial = new THREE.MeshBasicMaterial();
+        this.mapLoader = new MapManager(this.renderer.instance, this.mapMaterial, '/R0010121.JPG.jpg', '/R0010121_LOW.JPG')
+
         //------------------
         //Naive panorama render (no zoom, no nav yet)
         this.setupPanorama(this.scene, this.debug, this.options)
         this.tick()
     }
+
 
 
     setupPanorama = (scene: THREE.Scene, debug: Debug, options: any) => {
@@ -56,12 +67,8 @@ export class PanoViewerBasic {
         var geometry = new THREE.SphereGeometry(500, 60, 40);
         geometry.scale(- 1, 1, 1);
 
-        const texture = new THREE.TextureLoader().load('/R0010121.JPG.jpg')
-        texture.colorSpace = THREE.SRGBColorSpace
-        var material = new THREE.MeshBasicMaterial({
-            map: texture
-        });
-        this.mesh = new THREE.Mesh(geometry, material);
+
+        this.mesh = new THREE.Mesh(geometry, this.mapMaterial);
         this.mesh.setRotationFromEuler(new THREE.Euler(options.rotationX, options.rotationY, options.rotationZ))
 
         scene.add(this.mesh);
@@ -77,6 +84,12 @@ export class PanoViewerBasic {
         plane.rotateX(-Math.PI / 2)
         scene.add(plane);
 
+        //Add blurspot manager
+        this.blurspots = new BlurspotManager(this.scene, this.navigation, this.mesh, this.debug)
+
+        //Add map baker
+        this.baker = new EquirectangularBaker(this.scene, this.renderer, this.debug)
+
         //DEBUG 
         const debugFolder = debug.ui?.addFolder('Panorama correction');
         debugFolder?.add(options, 'rotationX').min(-0.3).max(0.3).onChange((value: number) => {
@@ -89,19 +102,32 @@ export class PanoViewerBasic {
             this.mesh?.setRotationFromEuler(new THREE.Euler(this.mesh.rotation.x, this.mesh.rotation.y, value))
         })
 
-        //Add blurspot manager
-        this.blurspots = new BlurspotManager(this.scene, this.navigation, this.mesh, this.debug)
+        const debugFolder2 = debug.ui?.addFolder('Bake');
+        debugFolder2?.add(this, 'bake')
+
 
     }
 
+    setBlurType = (type: string) => {
+
+        this.blurspots?.setBlurType(type)
+    }
+
+    setBlurShape = (shape: string) => {
+
+        this.blurspots?.setBlurShape(shape)
+    }
     bake = () => {
 
         console.log("bake")
+        this.baker?.bake()
     }
+
+
     update = () => {
         //update renderer
         this.renderer.update()
-
+        //this.baker?.cubemapCamera.update(this.renderer.instance, this.scene)
         //update navigation and camera
         this.navigation.update()
 
@@ -112,7 +138,9 @@ export class PanoViewerBasic {
         //const elapsedTime = this.clock.getElapsedTime()
 
         // Update experience
+        this.debug.stats?.begin();
         this.update()
+        this.debug.stats?.end();
 
         // Call tick again on the next frame; remember Id for react-relevant disposing
         this.animReqId = window.requestAnimationFrame(this.tick)

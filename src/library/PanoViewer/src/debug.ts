@@ -1,5 +1,9 @@
 import GUI from 'lil-gui'
 import Stats from 'stats.js';
+
+/**
+ * Debug class contains the Debug panel and stats.js FPS monitor
+ */
 export default class Debug {
 
     private active: boolean;

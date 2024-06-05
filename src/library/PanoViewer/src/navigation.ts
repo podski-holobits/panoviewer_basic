@@ -3,15 +3,20 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import Debug from './debug';
 
 
-//Navigation class - manages the camera and viewport - related navigation
-//TODO orbit controls need to be redefined for better zoom - very naive implementation now
+
+
+/**
+ *  Navigation class - manages the camera and viewport - related navigation
+ *  orbit controls could be redefined for better zoom - very naive implementation now
+ */
 export default class Navigation {
-    controls: OrbitControls
+    public controls: OrbitControls
+    public navcam: THREE.PerspectiveCamera
+
     private readonly scene: THREE.Scene;
     private canvas: HTMLElement
     private debug: Debug | undefined
 
-    navcam: THREE.PerspectiveCamera
 
     constructor(canvas: HTMLElement, scene: THREE.Scene, debug?: Debug) {
         this.scene = scene

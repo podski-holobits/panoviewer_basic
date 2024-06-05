@@ -27,8 +27,9 @@ export class BlurspotManager {
     private collider_sphere: THREE.Mesh
     private blurspot_list: THREE.Mesh[] = []
 
-    options = {
+    public options = {
         blurStrength: 0.5,
+        transmission: 1.0,
         drawSpeed: 0.1,
         shape: "circle"
     }
@@ -42,10 +43,10 @@ export class BlurspotManager {
 
 
 
-        this.blurspot_geometry = new THREE.CircleGeometry(10, 32);
+        this.blurspot_geometry = new THREE.CircleGeometry(10, 64);
         this.blurspot_geometry_rect = new THREE.PlaneGeometry(10, 10)
         this.blurspot_material = new THREE.MeshPhysicalMaterial({
-            transmission: 0.9,
+            transmission: this.options.transmission,
             roughness: this.options.blurStrength,
         })
         this.blurspot_material_test = new THREE.MeshBasicMaterial()
@@ -54,14 +55,30 @@ export class BlurspotManager {
         window.addEventListener("mouseup", this.onMouseUp);
         window.addEventListener("mousemove", this.drag);
 
-
+        //DEBUG
         const debugFolder = this.debug?.ui?.addFolder('Manual Blur');
         debugFolder?.add(this.options, 'blurStrength').min(0.0).max(1.0).step(0.01).onChange((value: number) => {
             this.blurspot_material.roughness = value
         })
+        debugFolder?.add(this.options, 'transmission').min(0.0).max(1.0).step(0.01).onChange((value: number) => {
+            this.blurspot_material.transmission = value
+        })
         debugFolder?.add(this.options, 'drawSpeed').min(0.050).max(0.15).step(0.001)
         debugFolder?.add(this.options, 'shape', { cirlce: "circle", square: "rect" })
         debugFolder?.add(this, 'clear')
+    }
+
+    setBlurType = (type: string) => {
+        if (type == "solid")
+            this.blurspot_material.transmission = 0.0
+        else
+            this.blurspot_material.transmission = 1.0
+    }
+    setBlurShape = (type: string) => {
+        if (type == "circle")
+            this.options.shape = "circle"
+        else
+            this.options.shape = "rect"
     }
 
 

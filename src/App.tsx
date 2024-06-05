@@ -1,14 +1,40 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import PanoViewer, { PanoViewerRef } from './library/PanoViewer/PanoViewer'
 import { VscDebugConsole } from "react-icons/vsc";
 import { AiOutlineInfo } from "react-icons/ai";
 import { MdOutlineBakeryDining } from "react-icons/md";
+import { FaRegCircle } from "react-icons/fa";
+import { FaRegSquare } from "react-icons/fa";
 
+import InfoDialog from "./library/InfoDialog";
+
+
+
+/**
+ * Main app for the experience
+ * TODO: have avbar component defined in separate classes 
+ */
 function App() {
+  const [isBlurShapeChecked, setIsBlurShapeChecked] = useState<boolean>(true);
+  const [isBlurTypeChecked, setIsBlurTypeChecked] = useState<boolean>(false);
 
+  //ref to the "forwardly- referenced" PanoViewer Component, giving access to exposed methods
   const viewerRef = useRef<PanoViewerRef>(null);
 
+  const handleBlurShapeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setIsBlurShapeChecked(event.target.checked);
+    var shape = event.target.checked ? "circle" : "rect"
+    viewerRef.current ? viewerRef.current.handleBlurShape(shape) : console.warn("no viewer available")
+  };
+
+
+  const handleBlurType = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setIsBlurTypeChecked(event.target.checked);
+    var shape = event.target.checked ? "solid" : "blurred"
+    viewerRef.current ? viewerRef.current.handleBlurType(shape) : console.warn("no viewer available")
+  };
+  //handle bake 
   const handleBakeClick = () => {
     viewerRef.current ? viewerRef.current.handleBake() : console.warn("no viewer available")
   }
@@ -19,10 +45,11 @@ function App() {
       {/* NAVBAR */}
       <header className="fixed  bottom-0 z-50 p-3 w-screen">
         <div className="navbar  bg-base-100 rounded-lg ">
-          <div className="navbar-start">
 
+          <div className="navbar-start">
             <span className=" text-md font-bold mx-5">PanoViewer</span>
           </div>
+
           <div className="navbar-center">
             {/* INFO PANEL */}
             <button className="btn  text-xl mx-1" onClick={() => {
@@ -31,11 +58,25 @@ function App() {
             }} >
               <AiOutlineInfo />
             </button>
+
+            <input type="checkbox" className="toggle toggle-lg ml-5" checked={isBlurShapeChecked} onChange={handleBlurShapeChange} />
+
+            <span className=" text-md ml-1 mr-1 font-medium "> blur shape:</span>
+            {isBlurShapeChecked ? <FaRegCircle className="mr-5" /> : <FaRegSquare className="mr-5" />}
+
+            <input type="checkbox" className="toggle toggle-lg" checked={isBlurTypeChecked} onChange={handleBlurType} />
+
+            <span className=" text-md  ml-1 font-medium mr-1">blur type:</span>
+            {isBlurTypeChecked ? "solid" : "glass"}
+
+
             {/* BAKE BUTTON*/}
-            <button className="btn  text-xl mx-1" onClick={handleBakeClick}>
+            <button className="btn  text-xl mx-5" onClick={handleBakeClick} disabled={!isBlurTypeChecked}>
               <MdOutlineBakeryDining />BAKE MAP
             </button>
+
           </div>
+
           <div className="navbar-end">
             {/* GO TO DEBUG PANEL SITE */}
             {/* TODO CHANGE INTO TOGGLE THROUGH PROPS OF THE PanoView */}
@@ -49,25 +90,8 @@ function App() {
 
       <PanoViewer ref={viewerRef} />
 
-
       {/* INFO PANEL FOR MANUAL AND INFORMATION */}
-      <dialog id="info" className="modal">
-        <div className="modal-box prose">
-          <h2 className="prose-h2">Panoview Basic - info</h2>
-
-          <h3 className="prose-h3">Instruction</h3>
-          <p className="prose-p">Placeholder for instructions</p>
-
-          <h3 className="prose-h3">About</h3>
-          <p className="prose-p">Made by Piotr Podziemski for Lumoview 2024</p>
-
-          <div className="modal-action">
-            <form method="dialog">
-              <button className="btn">CLOSE</button>
-            </form>
-          </div>
-        </div>
-      </dialog>
+      <InfoDialog id="info" />
       {/* END INFO PANEL -----------------------*/}
 
 

@@ -7,8 +7,14 @@ import Debug from './debug';
 //Renderer class - manages rendering of the experience and post-processing effects (if any)
 export default class Renderer {
 
-    renderer: THREE.WebGLRenderer;
-    camera: THREE.Camera;
+    public instance: THREE.WebGLRenderer;
+    public camera: THREE.Camera;
+
+    public options = {
+        exposure: 1.0,
+        toneMapping: THREE.NeutralToneMapping
+    }
+
     private scene: THREE.Scene
     private navigation: Navigation
     private debug: Debug | undefined
@@ -17,11 +23,6 @@ export default class Renderer {
 
     private width: number
     private height: number
-    options = {
-        exposure: 1.0,
-        toneMapping: THREE.NeutralToneMapping
-
-    }
 
     constructor(canvas: HTMLElement, scene: THREE.Scene, navigation: Navigation, debug?: Debug) {
         this.canvas = canvas
@@ -36,7 +37,7 @@ export default class Renderer {
         this.height = window.innerHeight
 
         // Renderer initialization
-        this.renderer = new THREE.WebGLRenderer({
+        this.instance = new THREE.WebGLRenderer({
             canvas: this.canvas,
             alpha: true,
             antialias: true
@@ -50,17 +51,17 @@ export default class Renderer {
     }
 
     init = () => {
-        this.renderer.toneMapping = this.options.toneMapping
-        this.renderer.toneMappingExposure = this.options.exposure
-        this.renderer.shadowMap.enabled = false
-        this.renderer.setClearColor("#fff", 1); // transparent
+        this.instance.toneMapping = this.options.toneMapping
+        this.instance.toneMappingExposure = this.options.exposure
+        this.instance.shadowMap.enabled = false
+        this.instance.setClearColor("#fff", 1); // transparent
     }
 
     initDebug = () => {
 
         const debugFolder = this.debug?.ui?.addFolder('Image correction');
         debugFolder?.add(this.options, 'exposure').min(0.2).max(3.0).step(0.05).onChange((value: number) => {
-            this.renderer.toneMappingExposure = value
+            this.instance.toneMappingExposure = value
         })
         debugFolder?.add(this.options, 'toneMapping',
             {
@@ -70,7 +71,7 @@ export default class Renderer {
                 "AgX": THREE.AgXToneMapping,
                 "ACES Filmic": THREE.ACESFilmicToneMapping
             }).onChange((value: THREE.ToneMapping) => {
-                this.renderer.toneMapping = value
+                this.instance.toneMapping = value
             })
     }
 
@@ -78,13 +79,13 @@ export default class Renderer {
         this.width = window.innerWidth
         this.height = window.innerHeight
         this.pixelRatio = Math.min(Math.max(window.devicePixelRatio, 1), 2);
-        this.renderer.setSize(this.width, this.height)
-        this.renderer.setPixelRatio(this.pixelRatio)
+        this.instance.setSize(this.width, this.height)
+        this.instance.setPixelRatio(this.pixelRatio)
         this.navigation.resize(this.width, this.height)
     }
 
     update = () => {
-        this.renderer.render(this.scene, this.navigation.navcam)
+        this.instance.render(this.scene, this.navigation.navcam)
     }
 
     dispose = () => {

@@ -31,6 +31,14 @@ varying vec2 vUv;
 
 #define M_PI 3.14159265358979
 
+float linearToSRGB(float linear) {
+    if (linear <= 0.0031308) {
+        return linear * 12.92;
+    } else {
+        return 1.055 * pow(linear, 1.0 / 2.4) - 0.055;
+    }
+}
+
 void main()  {
 
 	vec2 uv = vUv;
@@ -44,11 +52,21 @@ void main()  {
 		-cos(lon)*sin(lat)
 	);
 	normalize(dir);
-	gl_FragColor = textureCube( map, dir );
+    vec4 color = textureCube( map, dir );
+	gl_FragColor = vec4(
+        linearToSRGB(color.r),
+        linearToSRGB(color.g),
+        linearToSRGB(color.b),
+        1
+    );;
 
 }
 `;
-
+/**
+ * EquirectangularBaker bakes the environmental map with faces covered into new env map
+ * TODO fix/manage  color correction on the saved texture
+ * TODO fix/manage dealing with blurred objects
+ */
 export default class EquirectangularBaker {
 
     private scene: THREE.Scene
@@ -92,26 +110,24 @@ export default class EquirectangularBaker {
             format: THREE.RGBAFormat,
             type: THREE.UnsignedByteType
         });
-
         this.bakeQuadCanvas = new THREE.Mesh(
             new THREE.PlaneGeometry(1, 1),
             this.material
         );
         this.bakeScene.add(this.bakeQuadCanvas)
         this.bakeCamera = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, -1000, 1000);
-
         this.bakeCanvas = document.createElement('canvas');
         this.bakeRenderContext = this.bakeCanvas.getContext('2d');
         //this.bakeScene.add(this.bakeCamera)
 
         //-----
         //Set up cubemap camera capture
-        var cubeMapSize = Math.min(this.renderer.renderer.getContext().MAX_CUBE_MAP_TEXTURE_SIZE, this.height);
+        var cubeMapSize = Math.min(this.renderer.instance.getContext().MAX_CUBE_MAP_TEXTURE_SIZE, this.height);
         this.cubemapTarget = new THREE.WebGLCubeRenderTarget(cubeMapSize, {
             format: THREE.RGBAFormat,
             magFilter: THREE.LinearFilter,
             minFilter: THREE.LinearFilter,
-            generateMipmaps: false
+            generateMipmaps: true
         });
         this.cubemapCamera = new THREE.CubeCamera(.1, 1000, this.cubemapTarget);
         this.resize(this.width, this.height)
@@ -122,71 +138,84 @@ export default class EquirectangularBaker {
 
         //Update the render target -> this.cubemapTarget
         //this.scene.add(this.cubemapCamera);
-        this.cubemapCamera.update(this.renderer.renderer, this.scene);
-        //this.renderer.renderer.render(this.scene, this.renderer.camera);
+
+        this.cubemapCamera.update(this.renderer.instance, this.scene);
+        //this.renderer.instance.render(this.scene, this.renderer.camera);
         //console.log(this.cubemapTarget)
 
 
         var pixels = new Uint8Array(4 * this.width * this.height);
-        this.renderer.renderer.readRenderTargetPixels(this.cubemapTarget, 0, 0, this.height, this.height, pixels, 1);
+        this.renderer.instance.readRenderTargetPixels(this.cubemapTarget, 0, 0, this.height, this.height, pixels, 0);
         console.log(pixels)
 
 
         this.material.uniforms.map.value = this.cubemapTarget.texture;
 
 
-        //debug code
-        var material = new THREE.MeshStandardMaterial({
-            envMap: this.cubemapTarget.texture,
-            roughness: 0.05,
-            metalness: 1
-        });
-        var geometry = new THREE.SphereGeometry(2, 32, 32)
 
-        var mesh = new THREE.Mesh(geometry, material)
-        console.log(mesh)
-        mesh.position.set(0, 0, -5)
-        this.scene.add(mesh)
+        // //debug code
+        // var material = new THREE.MeshStandardMaterial({
+        //     envMap: this.cubemapTarget.texture,
+        //     roughness: 0.05,
+        //     metalness: 1
+        // });
+        // var geometry = new THREE.SphereGeometry(2, 32, 32)
 
-
-        // var originalTarget = this.renderer.renderer.getRenderTarget()
-        // this.renderer.renderer.setRenderTarget(this.bakeTarget)
-        // this.renderer.renderer.render(this.bakeScene, this.bakeCamera);
+        // var mesh = new THREE.Mesh(geometry, material)
+        // mesh.position.set(-5, -0, -5)
+        // this.scene.add(mesh)
 
 
-        // //this could be improved by async 
-        // this.renderer.renderer.readRenderTargetPixels(this.bakeTarget, 0, 0, this.width, this.height, pixels);
-        // console.log(this.width, this.height)
-        // var imageData = new ImageData(new Uint8ClampedArray(pixels), this.width, this.height);
+        // //debug code
+        // var material2 = new THREE.MeshBasicMaterial({
+        //     map: this.cubemapTarget.texture
+        // });
+        // var geometry2 = new THREE.PlaneGeometry(4, 2)
 
-        // this.renderer.renderer.setRenderTarget(originalTarget)
+        // var mesh2 = new THREE.Mesh(geometry2, material2)
+        // mesh2.position.set(0, 0, -5)
+        // this.scene.add(mesh2)
+        //this.scene.remove(this.cubemapCamera);
 
-        this.scene.remove(this.cubemapCamera);
+
+        var originalTarget = this.renderer.instance.getRenderTarget()
+        this.renderer.instance.setRenderTarget(this.bakeTarget)
+
+        this.renderer.instance.render(this.bakeScene, this.bakeCamera);
 
 
-        // if (this.bakeRenderContext) {
-        //     this.bakeRenderContext.putImageData(imageData, 0, 0);
-        //     this.bakeCanvas.toBlob((blob: Blob | null) => {
-        //         if (blob === null) {
-        //             console.error("Failed to create blob from canvas.");
-        //             return;
-        //         }
+        //this could be improved by async 
+        this.renderer.instance.readRenderTargetPixels(this.bakeTarget, 0, 0, this.width, this.height, pixels);
+        console.log(this.width, this.height)
+        var imageData = new ImageData(new Uint8ClampedArray(pixels), this.width, this.height);
 
-        //         var url = URL.createObjectURL(blob);
-        //         var filename = 'panoview_' + Date.now() + '.png';
-        //         var virtualink = document.createElement('a');
-        //         virtualink.href = url;
-        //         virtualink.setAttribute("download", filename);
-        //         virtualink.style.display = "none";
-        //         virtualink.className = "download-js-link";
-        //         virtualink.innerHTML = "x";
-        //         document.body.appendChild(virtualink);
-        //         setTimeout(function () {
-        //             virtualink.click();
-        //             document.body.removeChild(virtualink);
-        //         }, 1);
-        //     });
-        // }
+        this.renderer.instance.setRenderTarget(originalTarget)
+
+
+
+        if (this.bakeRenderContext) {
+            this.bakeRenderContext.putImageData(imageData, 0, 0);
+            this.bakeCanvas.toBlob((blob: Blob | null) => {
+                if (blob === null) {
+                    console.error("Failed to create blob from canvas.");
+                    return;
+                }
+
+                var url = URL.createObjectURL(blob);
+                var filename = 'panoview_' + Date.now() + '.png';
+                var virtualink = document.createElement('a');
+                virtualink.href = url;
+                virtualink.setAttribute("download", filename);
+                virtualink.style.display = "none";
+                virtualink.className = "download-js-link";
+                virtualink.innerHTML = "x";
+                document.body.appendChild(virtualink);
+                setTimeout(function () {
+                    virtualink.click();
+                    document.body.removeChild(virtualink);
+                }, 1);
+            });
+        }
 
     }
 
