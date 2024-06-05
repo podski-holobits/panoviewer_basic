@@ -1,3 +1,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+.grabbed {
+  cursor: grabbing;
+  cursor: -moz-grabbing;
+  cursor: -webkit-grabbing;
+}
+
+
+.painting {
+  cursor: crosshair !important;
+  cursor: -moz-crosshair;
+  cursor: -webkit-crosshair;
+}

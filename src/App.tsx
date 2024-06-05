@@ -39,7 +39,7 @@ function App() {
           <div className="navbar-end">
             {/* GO TO DEBUG PANEL SITE */}
             {/* TODO CHANGE INTO TOGGLE THROUGH PROPS OF THE PanoView */}
-            <a className="btn   text-xl mx-1" href="/?#debug">
+            <a className="btn  btn-primary text-xl mx-1" href="/?#debug">
               <VscDebugConsole />
             </a>
           </div>
@@ -54,10 +54,13 @@ function App() {
       <dialog id="info" className="modal">
         <div className="modal-box prose">
           <h2 className="prose-h2">Panoview Basic - info</h2>
+
           <h3 className="prose-h3">Instruction</h3>
           <p className="prose-p">Placeholder for instructions</p>
+
           <h3 className="prose-h3">About</h3>
           <p className="prose-p">Made by Piotr Podziemski for Lumoview 2024</p>
+
           <div className="modal-action">
             <form method="dialog">
               <button className="btn">CLOSE</button>
@@ -65,6 +68,9 @@ function App() {
           </div>
         </div>
       </dialog>
+      {/* END INFO PANEL -----------------------*/}
+
+
     </div >
   )
 }
