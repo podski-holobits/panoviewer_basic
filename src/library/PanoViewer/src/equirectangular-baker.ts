@@ -4,18 +4,19 @@ import Debug from './debug';
 import Renderer from './renderer';
 
 const vertexShader = `
+
     attribute vec3 position;
     attribute vec2 uv;
 
-    uniform mat4 projection;
-    uniform mat4 modelView;
+    uniform mat4 projectionMatrix;
+    uniform mat4 modelViewMatrix ;
 
     varying vec2 vUv;
 
     void main()  {
 
         vUv = vec2( 1.0 - uv.x, uv.y );
-        gl_Position = projection * modelView * vec4( position, 1.0 );
+        gl_Position = projectionMatrix * modelViewMatrix  * vec4( position, 1.0 );
 
     }
 `;
@@ -43,7 +44,6 @@ void main()  {
 		-cos(lon)*sin(lat)
 	);
 	normalize(dir);
-
 	gl_FragColor = textureCube( map, dir );
 
 }
@@ -65,7 +65,7 @@ export default class EquirectangularBaker {
     private bakeCanvas: HTMLCanvasElement
     private bakeRenderContext: CanvasRenderingContext2D | null
 
-    private cubemapCamera: THREE.CubeCamera
+    cubemapCamera: THREE.CubeCamera
     private cubemapTarget: THREE.WebGLCubeRenderTarget
 
     constructor(scene: THREE.Scene, renderer: Renderer, debug?: Debug) {
@@ -114,57 +114,79 @@ export default class EquirectangularBaker {
             generateMipmaps: false
         });
         this.cubemapCamera = new THREE.CubeCamera(.1, 1000, this.cubemapTarget);
+        this.resize(this.width, this.height)
 
     }
 
     bake = () => {
 
         //Update the render target -> this.cubemapTarget
-        this.cubemapCamera.position.set(0, 0, 0);
-        this.cubemapCamera.update(this.renderer.renderer, this.scene);
-
         //this.scene.add(this.cubemapCamera);
+        this.cubemapCamera.update(this.renderer.renderer, this.scene);
+        //this.renderer.renderer.render(this.scene, this.renderer.camera);
+        //console.log(this.cubemapTarget)
 
-        var originalTarget = this.renderer.renderer.getRenderTarget()
-
-        this.material.uniforms.map.value = this.cubemapTarget.texture;
-        this.renderer.renderer.setRenderTarget(this.bakeTarget)
-        this.renderer.renderer.render(this.bakeScene, this.bakeCamera);
 
         var pixels = new Uint8Array(4 * this.width * this.height);
-
-        //this could be improved by async 
-        this.renderer.renderer.readRenderTargetPixels(this.bakeTarget, 0, 0, this.width, this.height, pixels);
-
-        var imageData = new ImageData(new Uint8ClampedArray(pixels), this.width, this.height);
-
-        this.renderer.renderer.setRenderTarget(originalTarget)
+        this.renderer.renderer.readRenderTargetPixels(this.cubemapTarget, 0, 0, this.height, this.height, pixels, 1);
+        console.log(pixels)
 
 
+        this.material.uniforms.map.value = this.cubemapTarget.texture;
 
-        if (this.bakeRenderContext) {
-            this.bakeRenderContext.putImageData(imageData, 0, 0);
-            this.bakeCanvas.toBlob((blob: Blob | null) => {
-                if (blob === null) {
-                    console.error("Failed to create blob from canvas.");
-                    return;
-                }
 
-                var url = URL.createObjectURL(blob);
-                var filename = 'panoview_' + Date.now() + '.png';
-                var virtualink = document.createElement('a');
-                virtualink.href = url;
-                virtualink.setAttribute("download", filename);
-                virtualink.style.display = "none";
-                virtualink.className = "download-js-link";
-                virtualink.innerHTML = "x";
-                document.body.appendChild(virtualink);
-                setTimeout(function () {
-                    virtualink.click();
-                    document.body.removeChild(virtualink);
-                }, 1);
-            });
-        }
+        //debug code
+        var material = new THREE.MeshStandardMaterial({
+            envMap: this.cubemapTarget.texture,
+            roughness: 0.05,
+            metalness: 1
+        });
+        var geometry = new THREE.SphereGeometry(2, 32, 32)
+
+        var mesh = new THREE.Mesh(geometry, material)
+        console.log(mesh)
+        mesh.position.set(0, 0, -5)
+        this.scene.add(mesh)
+
+
+        // var originalTarget = this.renderer.renderer.getRenderTarget()
+        // this.renderer.renderer.setRenderTarget(this.bakeTarget)
+        // this.renderer.renderer.render(this.bakeScene, this.bakeCamera);
+
+
+        // //this could be improved by async 
+        // this.renderer.renderer.readRenderTargetPixels(this.bakeTarget, 0, 0, this.width, this.height, pixels);
+        // console.log(this.width, this.height)
+        // var imageData = new ImageData(new Uint8ClampedArray(pixels), this.width, this.height);
+
+        // this.renderer.renderer.setRenderTarget(originalTarget)
+
+        this.scene.remove(this.cubemapCamera);
+
+
+        // if (this.bakeRenderContext) {
+        //     this.bakeRenderContext.putImageData(imageData, 0, 0);
+        //     this.bakeCanvas.toBlob((blob: Blob | null) => {
+        //         if (blob === null) {
+        //             console.error("Failed to create blob from canvas.");
+        //             return;
+        //         }
+
+        //         var url = URL.createObjectURL(blob);
+        //         var filename = 'panoview_' + Date.now() + '.png';
+        //         var virtualink = document.createElement('a');
+        //         virtualink.href = url;
+        //         virtualink.setAttribute("download", filename);
+        //         virtualink.style.display = "none";
+        //         virtualink.className = "download-js-link";
+        //         virtualink.innerHTML = "x";
+        //         document.body.appendChild(virtualink);
+        //         setTimeout(function () {
+        //             virtualink.click();
+        //             document.body.removeChild(virtualink);
+        //         }, 1);
+        //     });
+        // }
 
     }
 
@@ -181,7 +203,10 @@ export default class EquirectangularBaker {
         this.bakeCamera.right = this.width / 2;
         this.bakeCamera.updateProjectionMatrix();
 
+        this.bakeCanvas.width = this.width
+        this.bakeCanvas.height = this.height
 
+        this.cubemapCamera.position.set(0, 0, 0);
         this.cubemapTarget.width = this.height
         this.cubemapTarget.height = this.height
 

@@ -8,6 +8,7 @@ import Debug from './debug';
 export default class Renderer {
 
     renderer: THREE.WebGLRenderer;
+    camera: THREE.Camera;
     private scene: THREE.Scene
     private navigation: Navigation
     private debug: Debug | undefined
@@ -27,7 +28,7 @@ export default class Renderer {
         this.scene = scene
         this.navigation = navigation
         this.debug = debug
-
+        this.camera = this.navigation.navcam
         // This could be done in separate viewport manager class, but here we don' have any complex framing 
         // of the canvas - only regular fullscreen implementation
         this.pixelRatio = Math.min(Math.max(window.devicePixelRatio, 1), 2);

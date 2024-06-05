@@ -15,7 +15,9 @@ export class BlurspotManager {
 
 
     private blurspot_geometry: THREE.CircleGeometry
+    private blurspot_geometry_rect: THREE.PlaneGeometry
     private blurspot_material: THREE.MeshPhysicalMaterial
+    private blurspot_material_test: THREE.MeshBasicMaterial
     private current_blurspot: THREE.Mesh | undefined | null = null
     private blurspot_drag: boolean = false
     private blurspot_pointer: THREE.Vector2 = new THREE.Vector2(0, 0)
@@ -23,10 +25,12 @@ export class BlurspotManager {
 
 
     private collider_sphere: THREE.Mesh
+    private blurspot_list: THREE.Mesh[] = []
 
     options = {
         blurStrength: 0.5,
-        drawSpeed: 0.1
+        drawSpeed: 0.1,
+        shape: "circle"
     }
 
     constructor(scene: THREE.Scene, navigation: Navigation, collider_sphere: THREE.Mesh, debug?: Debug) {
@@ -39,10 +43,12 @@ export class BlurspotManager {
 
 
         this.blurspot_geometry = new THREE.CircleGeometry(10, 32);
+        this.blurspot_geometry_rect = new THREE.PlaneGeometry(10, 10)
         this.blurspot_material = new THREE.MeshPhysicalMaterial({
-            transmission: 1,
+            transmission: 0.9,
             roughness: this.options.blurStrength,
         })
+        this.blurspot_material_test = new THREE.MeshBasicMaterial()
 
         window.addEventListener("mousedown", this.onMouseDown);
         window.addEventListener("mouseup", this.onMouseUp);
@@ -54,6 +60,8 @@ export class BlurspotManager {
             this.blurspot_material.roughness = value
         })
         debugFolder?.add(this.options, 'drawSpeed').min(0.050).max(0.15).step(0.001)
+        debugFolder?.add(this.options, 'shape', { cirlce: "circle", square: "rect" })
+        debugFolder?.add(this, 'clear')
     }
 
 
@@ -76,14 +84,20 @@ export class BlurspotManager {
                     this.blurspot_position = intersects[0].point
                     this.blurspot_position.multiplyScalar(0.8)
 
-                    this.current_blurspot = new THREE.Mesh(this.blurspot_geometry, this.blurspot_material);
+                    if (this.options.shape == "rect")
+                        this.current_blurspot = new THREE.Mesh(this.blurspot_geometry_rect, this.blurspot_material);
+                    else
+                        this.current_blurspot = new THREE.Mesh(this.blurspot_geometry, this.blurspot_material);
 
                     this.current_blurspot.position.set(this.blurspot_position.x, this.blurspot_position.y, this.blurspot_position.z)
                     this.current_blurspot.lookAt(new THREE.Vector3(0.0, 0.0, 0.0))
                     this.current_blurspot.scale.set(0.1, 0.1, 0.1)
+                    this.blurspot_list.push(this.current_blurspot)
                     this.scene.add(this.current_blurspot)
                 }
             }
+
+
         }
     }
 
@@ -118,6 +132,16 @@ export class BlurspotManager {
             }
             else {
                 this.blurspot_drag = false
+            }
+        }
+    }
+
+
+    clear = () => {
+        while (this.blurspot_list.length > 0) {
+            const blurspot = this.blurspot_list.pop();
+            if (blurspot !== undefined) {
+                this.scene.remove(blurspot);
             }
         }
     }
