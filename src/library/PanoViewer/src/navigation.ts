@@ -46,7 +46,7 @@ export default class Navigation {
     }
 
 
-
+    //Turn off orbitcontrols zoom and zoom via FOV
     zoom = (event: WheelEvent) => {
         const zoomChange = Math.min(Math.max(this.navcam.fov + event.deltaY * 0.04, 5), 145)
         this.navcam.fov = zoomChange

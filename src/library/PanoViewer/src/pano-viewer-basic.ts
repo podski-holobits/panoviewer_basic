@@ -64,17 +64,15 @@ export class PanoViewerBasic {
 
 
 
-    //INITIALIZATION
+    //INITIALIZATION AND DEBUG
     setupPanorama = (scene: THREE.Scene, debug: Debug, options: any) => {
 
         //panorama
         var geometry = new THREE.SphereGeometry(500, 60, 40);
         geometry.scale(- 1, 1, 1);
 
-
         this.mesh = new THREE.Mesh(geometry, this.mapMaterial);
         this.mesh.setRotationFromEuler(new THREE.Euler(options.rotationX, options.rotationY, options.rotationZ))
-
         scene.add(this.mesh);
 
 
@@ -108,8 +106,6 @@ export class PanoViewerBasic {
 
         const debugFolder2 = debug.ui?.addFolder('Bake');
         debugFolder2?.add(this, 'bake')
-
-
     }
 
 
@@ -134,7 +130,7 @@ export class PanoViewerBasic {
     update = () => {
         //update renderer
         this.renderer.update()
-        //this.baker?.cubemapCamera.update(this.renderer.instance, this.scene)
+        //this.baker?.cubemapCamera.update(this.renderer.instance, this.scene) // DEBUG line
         //update navigation and camera
         this.navigation.update()
 

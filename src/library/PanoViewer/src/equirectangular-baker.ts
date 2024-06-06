@@ -21,6 +21,8 @@ const vertexShader = `
     }
 `;
 
+
+//fragment shader for cubemap - equimap conversion + sRGB conversion for export
 const fragmentShader = `
 
 precision mediump float;
@@ -83,7 +85,8 @@ export default class EquirectangularBaker {
     private bakeCanvas: HTMLCanvasElement
     private bakeRenderContext: CanvasRenderingContext2D | null
 
-    cubemapCamera: THREE.CubeCamera
+    public cubemapCamera: THREE.CubeCamera //TODO public for DEBUG
+
     private cubemapTarget: THREE.WebGLCubeRenderTarget
 
     constructor(scene: THREE.Scene, renderer: Renderer, debug?: Debug) {
@@ -136,24 +139,20 @@ export default class EquirectangularBaker {
 
     bake = () => {
 
-        //Update the render target -> this.cubemapTarget
-        //this.scene.add(this.cubemapCamera);
 
+        //get a cubemap of current environment 
+        //this.scene.add(this.cubemapCamera);
         this.cubemapCamera.update(this.renderer.instance, this.scene);
         //this.renderer.instance.render(this.scene, this.renderer.camera);
-        //console.log(this.cubemapTarget)
 
 
         var pixels = new Uint8Array(4 * this.width * this.height);
         this.renderer.instance.readRenderTargetPixels(this.cubemapTarget, 0, 0, this.height, this.height, pixels, 0);
-        console.log(pixels)
-
 
         this.material.uniforms.map.value = this.cubemapTarget.texture;
 
 
-
-        // //debug code
+        // //debug code commented 
         // var material = new THREE.MeshStandardMaterial({
         //     envMap: this.cubemapTarget.texture,
         //     roughness: 0.05,
@@ -166,7 +165,6 @@ export default class EquirectangularBaker {
         // this.scene.add(mesh)
 
 
-        // //debug code
         // var material2 = new THREE.MeshBasicMaterial({
         //     map: this.cubemapTarget.texture
         // });
@@ -178,6 +176,7 @@ export default class EquirectangularBaker {
         //this.scene.remove(this.cubemapCamera);
 
 
+        // prepare a bake scene with rect and camera to record transformed map into render target
         var originalTarget = this.renderer.instance.getRenderTarget()
         this.renderer.instance.setRenderTarget(this.bakeTarget)
 
@@ -186,13 +185,13 @@ export default class EquirectangularBaker {
 
         //this could be improved by async 
         this.renderer.instance.readRenderTargetPixels(this.bakeTarget, 0, 0, this.width, this.height, pixels);
-        console.log(this.width, this.height)
+        //console.log(this.width, this.height)
         var imageData = new ImageData(new Uint8ClampedArray(pixels), this.width, this.height);
 
         this.renderer.instance.setRenderTarget(originalTarget)
 
-
-
+        //---
+        //prepare download data and link
         if (this.bakeRenderContext) {
             this.bakeRenderContext.putImageData(imageData, 0, 0);
             this.bakeCanvas.toBlob((blob: Blob | null) => {

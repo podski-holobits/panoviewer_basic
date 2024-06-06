@@ -2,30 +2,11 @@ import * as THREE from 'three'
 import Navigation from './navigation';
 import Debug from './debug';
 
-//TODO clear blurspots
-//TODO dispose of existing blurspots
 
+/**
+ * Manages the creation, manipulation, and disposal of blur spots on the panorama.
+ */
 export class BlurspotManager {
-
-    private readonly scene: THREE.Scene;
-
-    private navigation: Navigation
-    private debug: Debug | undefined
-
-
-
-    private blurspot_geometry: THREE.CircleGeometry
-    private blurspot_geometry_rect: THREE.PlaneGeometry
-    private blurspot_material: THREE.MeshPhysicalMaterial
-    private blurspot_material_test: THREE.MeshBasicMaterial
-    private current_blurspot: THREE.Mesh | undefined | null = null
-    private blurspot_drag: boolean = false
-    private blurspot_pointer: THREE.Vector2 = new THREE.Vector2(0, 0)
-    private blurspot_position: THREE.Vector3 = new THREE.Vector3(0, 0, 0)
-
-
-    private collider_sphere: THREE.Mesh
-    private blurspot_list: THREE.Mesh[] = []
 
     public options = {
         blurStrength: 0.5,
@@ -33,6 +14,24 @@ export class BlurspotManager {
         drawSpeed: 0.1,
         shape: "circle"
     }
+
+    private readonly scene: THREE.Scene;
+    private navigation: Navigation
+    private debug: Debug | undefined
+
+    private blurspot_geometry: THREE.CircleGeometry
+    private blurspot_geometry_rect: THREE.PlaneGeometry
+    private blurspot_material: THREE.MeshPhysicalMaterial
+    //private blurspot_material_test: THREE.MeshBasicMaterial
+
+    private blurspot_drag: boolean = false
+    private blurspot_pointer: THREE.Vector2 = new THREE.Vector2(0, 0)
+    private blurspot_position: THREE.Vector3 = new THREE.Vector3(0, 0, 0)
+
+    private current_blurspot: THREE.Mesh | undefined | null = null
+    private blurspot_list: THREE.Mesh[] = []
+
+    private collider_sphere: THREE.Mesh
 
     constructor(scene: THREE.Scene, navigation: Navigation, collider_sphere: THREE.Mesh, debug?: Debug) {
         this.scene = scene;
@@ -49,7 +48,7 @@ export class BlurspotManager {
             transmission: this.options.transmission,
             roughness: this.options.blurStrength,
         })
-        this.blurspot_material_test = new THREE.MeshBasicMaterial()
+        //this.blurspot_material_test = new THREE.MeshBasicMaterial()
 
         window.addEventListener("mousedown", this.onMouseDown);
         window.addEventListener("mouseup", this.onMouseUp);
@@ -68,6 +67,7 @@ export class BlurspotManager {
         debugFolder?.add(this, 'clear')
     }
 
+    //MAIN METHODS
     setBlurType = (type: string) => {
         if (type == "solid")
             this.blurspot_material.transmission = 0.0
@@ -80,8 +80,17 @@ export class BlurspotManager {
         else
             this.options.shape = "rect"
     }
+    clear = () => {
+        while (this.blurspot_list.length > 0) {
+            const blurspot = this.blurspot_list.pop();
+            if (blurspot !== undefined) {
+                this.scene.remove(blurspot);
+            }
+        }
+    }
 
 
+    // MOUSE EVENTS
     onMouseDown = (event: MouseEvent) => {
 
         this.blurspot_pointer = new THREE.Vector2(
@@ -118,7 +127,7 @@ export class BlurspotManager {
         }
     }
 
-    onMouseUp = (event: MouseEvent) => {
+    onMouseUp = () => {
         this.current_blurspot = null
         this.blurspot_drag = false
         this.blurspot_pointer = new THREE.Vector2(0, 0)
@@ -153,16 +162,7 @@ export class BlurspotManager {
         }
     }
 
-
-    clear = () => {
-        while (this.blurspot_list.length > 0) {
-            const blurspot = this.blurspot_list.pop();
-            if (blurspot !== undefined) {
-                this.scene.remove(blurspot);
-            }
-        }
-    }
-
+    // DISPOSE
     dispose = () => {
 
         window.removeEventListener("mousedown", this.onMouseDown);
